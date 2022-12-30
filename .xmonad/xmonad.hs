@@ -131,6 +131,8 @@ move  s = do
   focus <- getFocusedWindow
   if focus == Nothing then return () else windows $ W.shift =<< W.tag . W.workspace . head . W.visible
 
+moveMasterToScreen :: X ()
+moveMasterToScreen = undefined
 
 --moveFocusedWindowToAnotherScreen :: X ()
 --moveFocusedWindowToAnotherScreen = do
@@ -232,20 +234,6 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   --------------------------------------------------------------------
   --  XMONAD LAYOUT KEYS
 
-  -- Cycle through the available layout algorithms.
-  , ((modMask, xK_space), sendMessage NextLayout)
-
-  , ((modMask .|. shiftMask, xK_s), windows $ W.greedyView =<< W.tag . W.workspace . head . W.visible)
-
-  -- Focus selected desktop
-  , ((mod1Mask, xK_Tab), nextWS)
-
-  -- Reset the layouts on the current workspace to default.
-  , ((modMask .|. shiftMask, xK_space), setLayout $ XMonad.layoutHook conf)
-
-  -- Move focus to the next window.
-  , ((modMask, xK_j), windows W.focusDown)
-
   -- Send to right screen, then focus
   --, ((modMask .|. shiftMask, xK_d), P.sendToScreen def 1 >> P.viewScreen def 1)
   -- Send to left screen, then focus
@@ -258,22 +246,44 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- Full screen
   , ((modMask, xK_f), sendMessage $ Toggle NBFULL)
 
+  -- Cycle through the available layout algorithms.
+  , ((modMask, xK_space), sendMessage NextLayout)
+
+  -- Gets first workspace on second screen (visible stores workspaces on second screen)
+  , ((modMask .|. shiftMask, xK_s), windows $ W.greedyView =<< W.tag . W.workspace . head . W.visible)
+
+  -- Reset the layouts on the current workspace to default.
+  , ((modMask .|. shiftMask, xK_space), setLayout $ XMonad.layoutHook conf)
+
+
+  -- Focus
+  -- Focus selected desktop
+  , ((mod1Mask, xK_Tab), nextWS)
+
+  -- Move focus to the next window.
+  , ((modMask, xK_j), windows W.focusDown)
+
   -- Move focus to the previous window.
-  , ((modMask, xK_s), windows W.focusUp  )
-  , ((modMask .|. shiftMask, xK_Down), windows W.focusUp  )
+  --, ((modMask, xK_s), windows W.focusUp  )
+  , ((modMask, xK_Down), windows W.focusDown)
+
+  , ((modMask, xK_Up), windows W.focusUp)
 
   -- Move focus to the master window.
-  , ((modMask .|. shiftMask, xK_m), windows W.focusMaster  )
+  , ((modMask, xK_m), windows W.focusMaster)
+
+
+  -- Swaps
+  -- Swap focused with the master window.
+  , ((modMask .|. shiftMask, xK_m), windows W.swapMaster)
 
   -- Swap the focused window with the next window.
   , ((modMask, xK_j), windows W.swapDown  )
 
+  -- Swap the focused window with the previous window.
   , ((modMask, xK_k), windows W.swapUp  )
 
-  -- Swap the focused window with the previous window.
-  --, ((modMask .|. shiftMask, xK_k), windows W.swapUp    )
-
-  , ((modMask, xK_m), windows W.shiftMaster)
+  
 
   -- Shrink the master area.
   , ((controlMask .|. shiftMask , xK_h), sendMessage Shrink)
