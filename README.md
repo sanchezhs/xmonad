@@ -1,3 +1,3 @@
 # xmonad
 
-![Alt text](./xmonad/images/desktop1.png)
+![Alt text](./images/desktop1.png)
