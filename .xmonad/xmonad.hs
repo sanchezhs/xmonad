@@ -1,21 +1,22 @@
-import System.IO
-import System.Exit
+--import System.IO
+--import System.Exit
 
 import XMonad
+import qualified XMonad.Operations as O -- focus temp
 import XMonad.Hooks.SetWMName
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageHelpers(doFullFloat, doCenterFloat, isFullscreen, isDialog)
-import XMonad.Hooks.DynamicIcons
+--import XMonad.Hooks.DynamicIcons
 import XMonad.Config.Desktop
-import XMonad.Config.Azerty
+--import XMonad.Config.Azerty
 import XMonad.Util.Run(spawnPipe)
 import XMonad.Actions.SpawnOn
 import XMonad.Util.EZConfig (additionalKeys, additionalMouseBindings, additionalKeysP)
 import XMonad.Actions.CycleWS
 import XMonad.Hooks.UrgencyHook
-import qualified Codec.Binary.UTF8.String as UTF8
+--import qualified Codec.Binary.UTF8.String as UTF8
 
 import XMonad.Layout.Spacing
 import XMonad.Layout.Gaps
@@ -27,27 +28,28 @@ import XMonad.Layout.Spiral(spiral)
 import XMonad.Layout.ThreeColumns
 import XMonad.Layout.MultiToggle
 import XMonad.Layout.MultiToggle.Instances
-import XMonad.Layout.IndependentScreens
+--import XMonad.Layout.IndependentScreens
 
 
-import XMonad.Layout.CenteredMaster(centerMaster)
+--import XMonad.Layout.CenteredMaster(centerMaster)
 
 import Graphics.X11.ExtraTypes.XF86
 import qualified XMonad.StackSet as W
 import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
-import qualified Data.ByteString as B
-import Control.Monad (liftM2)
+--import qualified Data.ByteString as B
+import Control.Monad as C
 
-import qualified XMonad.Layout.Renamed as R
+--import qualified XMonad.Layout.Renamed as R
 import XMonad.Actions.UpdatePointer
-import qualified XMonad.Actions.PhysicalScreens as P
-import Data.Default
-import XMonad.Util.NamedScratchpad
-import Data.Maybe (fromJust, isJust, fromMaybe)
+--import qualified XMonad.Actions.PhysicalScreens as P
+--import Data.Default
+--import XMonad.Util.NamedScratchpad
+import Data.Maybe --(fromJust, isJust, fromMaybe, isNothing)
 import Data.Monoid
 import Color.Nord
 import Data.List
+import Graphics.X11.Types(Window)
 
 --mod4Mask= super key
 --mod1Mask= alt key
@@ -83,16 +85,9 @@ myFocusFollowsMouse = True
 myBorderWidth :: Dimension
 myBorderWidth = 2
 
-myWorkspaces :: [String]
-myWorkspaces    =  ["1","2","3","4","5","6","7","8","9","10"]
+myWorkspaces :: [WorkspaceId]
+myWorkspaces = map show [1 .. 9 :: Int] 
 
-myIcons :: Query [String]
-myIcons = composeAll
-  [ className =? "discord" --> appIcon "\xfb6e"
-  , className =? "Discord" --> appIcon "\xf268"
-  , className =? "Firefox" --> appIcon "\63288"
-  , className =? "Spotify" <||> className =? "spotify" --> appIcon "阮"
-  ]
 
 windowCount :: X (Maybe String)
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
@@ -122,11 +117,23 @@ actionSuffix = "</action>"
 getFocusedWindow :: X (Maybe Window)
 getFocusedWindow = gets $ W.peek . windowset
 
-currentScreen :: X ScreenId 
+currentScreen :: X ScreenId
 currentScreen = gets (W.screen . W.current . windowset)
 
+-- Switch focus between monitors
+focusAnotherScreen :: X ()
+focusAnotherScreen = do 
+  w <- gets (aux . W.stack . W.workspace . head . W.visible . windowset)
+  O.focus w
+
+
+aux :: Maybe (W.Stack Window) -> Window 
+aux (Just (W.Stack f u d)) = f  
+aux Nothing                = 0
+
+
 move :: Int -> X ()
-move  s = do 
+move  s = do
   curr <- currentScreen
   focus <- getFocusedWindow
   if focus == Nothing then return () else windows $ W.shift =<< W.tag . W.workspace . head . W.visible
@@ -162,7 +169,7 @@ myManageHook = composeAll . concat $
     , [resource =? i --> doIgnore | i <- myIgnores]
     ]
     where
-    myCFloats = ["Nitrogen", "Arandr", "Arcolinux-calamares-tool.py", "Archlinux-tweak-tool.py", 
+    myCFloats = ["Nitrogen", "Arandr", "Arcolinux-calamares-tool.py", "Archlinux-tweak-tool.py",
                 "Arcolinux-welcome-app.py", "Thunar", "Archlinux-logout.py", "Pavucontrol"]
     myTFloats = ["Catálogo", "Downloads", "Save As..."]
     myRFloats = []
@@ -182,7 +189,7 @@ myLayout = spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidSt
 ------------------------------------------------------------------------------------
 
 myMouseBindings :: XConfig l -> M.Map (KeyMask, Button) (Window -> X ())
-myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList 
+myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList
 
     -- mod-button1, Set the window to floating mode and move by dragging
     [ ((modMask, 1), \w -> focus w >> mouseMoveWindow w >> windows W.shiftMaster)
@@ -197,7 +204,7 @@ myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList
 
 
 -- keys config
-
+myKeys :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   ----------------------------------------------------------------------
   -- SUPER + FUNCTION KEYS
@@ -207,6 +214,8 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((modMask, xK_Return), spawn "alacritty" )
   , ((modMask, xK_z), spawn "thunar" )
   , ((modMask, xK_b), spawn "firefox" )
+
+  , ((modMask, xK_i), focusAnotherScreen )
 
   -- SUPER + SHIFT KEYS
   --, ((modMask .|. shiftMask , xK_d ), spawn "dmenu_run -i -nb '#191919' -nf '#fea63c' -sb '#fea63c' -sf '#191919' -fn 'NotoMonoRegular:bold:pixelsize=14'")
@@ -239,7 +248,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- Send to left screen, then focus
   --, ((modMask .|. shiftMask, xK_a), P.sendToScreen def 0 >> P.viewScreen def 0)
   , ((modMask .|. shiftMask, xK_d), windows $ W.shift =<< W.tag . W.workspace . head . W.visible)
-  
+
   -- Toggle floating.
   , ((modMask .|. shiftMask , xK_f), withFocused toggleFloat)
 
@@ -249,7 +258,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- Cycle through the available layout algorithms.
   , ((modMask, xK_space), sendMessage NextLayout)
 
-  -- Gets first workspace on second screen (visible stores workspaces on second screen)
+  -- Shifts the window with the tag of the first visible workspace to the current workspace.
   , ((modMask .|. shiftMask, xK_s), windows $ W.greedyView =<< W.tag . W.workspace . head . W.visible)
 
   -- Reset the layouts on the current workspace to default.
@@ -283,7 +292,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- Swap the focused window with the previous window.
   , ((modMask, xK_k), windows W.swapUp  )
 
-  
+
 
   -- Shrink the master area.
   , ((controlMask .|. shiftMask , xK_h), sendMessage Shrink)
@@ -296,7 +305,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
 
   -- Decrement the number of windows in the master area.
   , ((controlMask .|. modMask, xK_Right), sendMessage (IncMasterN (-1)))
-   
+
   ]
 
    ++
@@ -307,7 +316,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)
         , (\i -> W.view i . W.shift i, shiftMask)]]
 
-  
+
 
 ------------------------------------------------------------------------------------
 
@@ -354,7 +363,7 @@ main = do
 --            -- order of things in xmobar
 --          , ppOrder  = \(ws:l:t:ex) -> [ws,l]++ex++[t]
 --          } >> updatePointer (0.5, 0.5) (0, 0)
-        
+
 }
   where
     blue     = xmobarColor "#B48EAD" ""
