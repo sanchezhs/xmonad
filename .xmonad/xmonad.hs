@@ -76,9 +76,8 @@ myWorkspaces = map show [1 .. 9 :: Int]
 
 layouts :: [(String, Int)]
 layouts = zip 
-  ["Spacing Tall", "Spacing Mirror Tall", "Spacing Spiral", 
-  "Spacing ThreeCol", "Spacing Full", "Tall", "Mirror Tall", "Full"]
-  [1 ..]
+  ["Spacing Tall", "Spacing Mirror Tall", "Spacing Spiral",  "Spacing ThreeCol", "Spacing Full", "Tall", "Mirror Tall", "Full"]
+  [0 ..]
 
 
 scratchpads = [
@@ -120,13 +119,13 @@ getHook _ [] = "9"
 getHook x ((a,b):xs) = if x == a then show b else getHook x xs
 
 
-getLayout ::  X ()
-getLayout  = do
+nextLayout ::  X ()
+nextLayout  = do
   sendMessage NextLayout
   layout <- gets $ description . W.layout . W.workspace . W.current . windowset
   sc     <- currentScreen
-  spawn $ "polybar-msg action layout" ++ show (getCurrentScreen sc) ++ " hook "  ++ getHook layout layouts
-  
+  if sc == 0 then spawn $ "polybar-msg action layout2 hook "  ++ getHook layout layouts
+  else spawn $ "polybar-msg action layout1 hook "  ++ getHook layout layouts  
 
 
 toggleFloat :: Window -> X ()
@@ -230,7 +229,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((modMask, xK_f), sendMessage $ Toggle NBFULL)
 
   -- Cycle through the available layout algorithms.
-  , ((modMask, xK_space), sendMessage NextLayout)
+  , ((modMask, xK_space), nextLayout)
 
   -- Shifts the window with the tag of the first visible workspace to the current workspace.
   , ((modMask .|. shiftMask, xK_s), windows $ W.greedyView =<< W.tag . W.workspace . head . W.visible)
