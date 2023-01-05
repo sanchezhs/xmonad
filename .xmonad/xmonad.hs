@@ -1,16 +1,25 @@
 import XMonad
-import qualified XMonad.Operations as O -- focus temp
+import qualified XMonad.StackSet as W
+import qualified XMonad.Operations as O
+
+-- Hooks
 import XMonad.Hooks.SetWMName
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageHelpers(doFullFloat, doCenterFloat, isFullscreen, isDialog)
 import XMonad.Config.Desktop
+
+-- Utils
 import XMonad.Util.Run(spawnPipe, hPutStrLn)
 import XMonad.Util.SpawnOnce(spawnOnce)
-import XMonad.Actions.SpawnOn
 import XMonad.Util.EZConfig (additionalKeys, additionalMouseBindings, additionalKeysP)
+import XMonad.Util.NamedScratchpad
+
+-- Actions
+import XMonad.Actions.SpawnOn
 import XMonad.Actions.CycleWS
+import XMonad.Actions.UpdatePointer
 
 -- Layouts
 import XMonad.Layout.Spacing
@@ -23,78 +32,20 @@ import XMonad.Layout.MultiToggle
 import XMonad.Layout.MultiToggle.Instances
 import XMonad.Layout.IndependentScreens
 
-
+-- 
 import Graphics.X11.ExtraTypes.XF86
-import qualified XMonad.StackSet as W
 import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
-import XMonad.Actions.UpdatePointer
 import Data.Maybe (fromJust, isJust, fromMaybe, isNothing)
+
+
+
+-- Extras
 import Color.Nord
-import XMonad.Util.NamedScratchpad
+import Config.Configs
 
---mod4Mask= super key
---mod1Mask= alt key
---controlMask= ctrl key
---shiftMask= shift key
 
 ------------------------------------------------------------------------------------
-
--- Actions to perform on startup
-myStartupHook :: X ()
-myStartupHook = do
-    spawn "$HOME/.xmonad/scripts/autostart.sh"
-    spawn "killall trayer"
-    --spawn ("sleep 2 && trayer --edge top --align right --widthtype request --padding 8 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --transparent true --alpha 0 " ++ colorTrayer ++ " --height 22")
-    spawn "sleep 2 && polybar-msg action layout1 hook 0 && polybar-msg action layout2 hook 0"
-    setWMName "LG3D"
-
-------------------------------------------------------------------------------------
-
-myTerminal :: [Char]
-myTerminal = "alacritty"
-
-normBord :: String
-normBord = "#4c566a"
-
-focdBord :: String
-focdBord = "#E5B8F4"
-
-myModMask :: KeyMask
-myModMask = mod4Mask
-
-myFocusFollowsMouse :: Bool
-myFocusFollowsMouse = True
-
-myBorderWidth :: Dimension
-myBorderWidth = 2
-
-myWorkspaces :: [WorkspaceId]
-myWorkspaces = map show [1 .. 9 :: Int]
-
-------------------------------------------------------------------------------------
-
-layouts :: [(String, Int)]
-layouts = zip 
-  ["Spacing Tall", "Spacing Mirror Tall", "Spacing Spiral",  "Spacing ThreeCol", "Spacing Full", "Tall", "Mirror Tall", "Full"]
-  [0 ..]
-
-
-scratchpads = [
--- run htop in xterm, find it by title, use default floating window placement
-    NS "htop" "alacritty -e htop" (title =? "htop") defaultFloating ,
-
--- run stardict, find it by class name, place it in the floating window
--- 1/6 of screen width from the left, 1/6 of screen height
--- from the top, 2/3 of screen width by 2/3 of screen height
-    NS "thunar" "thunar" (className =? "Thunar")
-        (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) ,
-
--- run gvim, find by role, don't float
-    NS "notes" "gvim --role notes ~/notes.txt" (role =? "notes") nonFloating
-  ] where role = stringProperty "WM_WINDOW_ROLE"
-
-
 ------------------------------------------------------------------------------------
 
 -- Switch focus between monitors
@@ -134,6 +85,18 @@ toggleFloat w =
         if M.member w (W.floating s)
           then W.sink w s
           else W.float w (W.RationalRect (1 / 3) (1 / 4) (1 / 2) (1 / 2)) s )
+
+------------------------------------------------------------------------------------
+
+-- Actions to perform on startup
+myStartupHook :: X ()
+myStartupHook = do
+    spawn "$HOME/.xmonad/scripts/autostart.sh"
+    spawn "killall trayer"
+    --spawn ("sleep 2 && trayer --edge top --align right --widthtype request --padding 8 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --transparent true --alpha 0 " ++ colorTrayer ++ " --height 22")
+    spawn "sleep 2 && polybar-msg action layout1 hook 0 && polybar-msg action layout2 hook 0"
+    setWMName "LG3D"
+
 
 ------------------------------------------------------------------------------------
 
