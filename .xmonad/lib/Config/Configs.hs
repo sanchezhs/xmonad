@@ -41,8 +41,8 @@ layouts = zip
 
 
 scratchpads = [
-    NS "alacritty" "alacritty" (className =? "Alacritty")
-        (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) ,
+--    NS "alacritty" "alacritty" (className =? "Alacritty")
+--        (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) ,
 
     NS "thunar" "thunar" (className =? "Thunar")
         (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) 
