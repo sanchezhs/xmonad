@@ -65,7 +65,7 @@ currentScreen = gets (W.screen . W.current . windowset)
 getCurrentScreen :: ScreenId -> Int 
 getCurrentScreen (S i) = i
 
-getHook :: String -> [(String,Int)] -> String
+getHook :: String -> [(String, Int)] -> String
 getHook _ [] = "9"
 getHook x ((a,b):xs) = if x == a then show b else getHook x xs
 
@@ -74,8 +74,8 @@ nextLayout ::  X ()
 nextLayout  = do
   sendMessage NextLayout
   layout <- gets $ description . W.layout . W.workspace . W.current . windowset
-  sc     <- currentScreen
-  if sc == 0 then spawn $ "polybar-msg action layout2 hook "  ++ getHook layout layouts
+  cs     <- currentScreen
+  if cs == 0 then spawn $ "polybar-msg action layout2 hook "  ++ getHook layout layouts
   else spawn $ "polybar-msg action layout1 hook "  ++ getHook layout layouts  
 
 
@@ -92,8 +92,6 @@ toggleFloat w =
 myStartupHook :: X ()
 myStartupHook = do
     spawn "$HOME/.xmonad/scripts/autostart.sh"
-    spawn "killall trayer"
-    --spawn ("sleep 2 && trayer --edge top --align right --widthtype request --padding 8 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --transparent true --alpha 0 " ++ colorTrayer ++ " --height 22")
     spawn "sleep 2 && polybar-msg action layout1 hook 0 && polybar-msg action layout2 hook 0"
     setWMName "LG3D"
 
@@ -103,11 +101,11 @@ myStartupHook = do
 -- The action to run when a new window is opened
 myManageHook :: ManageHook
 myManageHook = composeAll . concat $
-    [ [isDialog --> doCenterFloat]
+    [ [isDialog       --> doCenterFloat]
     , [className =? c --> doCenterFloat | c <- myCFloats]
-    , [title =? t --> doFloat | t <- myTFloats]
-    , [resource =? r --> doFloat | r <- myRFloats]
-    , [resource =? i --> doIgnore | i <- myIgnores]
+    , [title =? t     --> doFloat | t <- myTFloats]
+    , [resource =? r  --> doFloat | r <- myRFloats]
+    , [resource =? i  --> doIgnore | i <- myIgnores]
     ]
     where
     myCFloats = ["Nitrogen", "Arandr", "Arcolinux-calamares-tool.py", "Archlinux-tweak-tool.py",
@@ -144,8 +142,7 @@ myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList
     ]
 
 
--- keys config
-
+-- Keys config
 myKeys :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   ----------------------------------------------------------------------
@@ -169,14 +166,19 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((0, xK_Print), spawn "scrot '%Y-%m-%d-%s_screenshot_$wx$h.jpg' -e 'mv $f $$(xdg-user-dir PICTURES)'")
 
   -- Mute volume
-  , ((0, xF86XK_AudioMute), spawn "amixer -q set Master toggle")
+  , ((mod1Mask, xK_Print), spawn "amixer -q set Master toggle")
+  --, ((0, xF86XK_AudioMute), spawn "amixer -q set Master toggle")
 
   -- Decrease volume
-  , ((0, xF86XK_AudioLowerVolume), spawn "amixer -q set Master 5%-")
+  , ((mod1Mask, xK_Scroll_Lock), spawn "amixer -q set Master 5%-")
+  --, ((0, xF86XK_AudioLowerVolume), spawn "amixer -q set Master 5%-")
 
   -- Increase volume
-  , ((0, xF86XK_AudioRaiseVolume), spawn "amixer -q set Master 5%+")
-  , ((0, xF86XK_AudioPlay), spawn "playerctl play-pause")
+  , ((mod1Mask, xK_Pause), spawn "amixer -q set Master 5%+")
+  --, ((0, xF86XK_AudioRaiseVolume), spawn "amixer -q set Master 5%+")
+
+  --, ((0, xF86XK_AudioPlay), spawn "playerctl play-pause")
+  , ((mod1Mask, xK_F9), spawn "playerctl play-pause")
   , ((0, xF86XK_AudioNext), spawn "playerctl next")
   , ((0, xF86XK_AudioPrev), spawn "playerctl previous")
   , ((0, xF86XK_AudioStop), spawn "playerctl stop")
@@ -231,7 +233,6 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((modMask .|. shiftMask, xK_k), windows W.swapUp  )
 
 
-
   -- Shrink the master area.
   , ((modMask .|. shiftMask , xK_h), sendMessage Shrink)
 
@@ -250,12 +251,12 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]        
     
  
-
+-- Por hacer: Mejores nombres a escritorios de los monitores
 ------------------------------------------------------------------------------------
 
 main :: IO ()
 main = do
-  xmonad . ewmh $  desktopConfig {
+  xmonad . ewmh $ desktopConfig {
         startupHook        = myStartupHook
       , layoutHook         = gaps [(U,35), (D,5), (R,5), (L,5)] $ myLayout ||| layoutHook desktopConfig
       , manageHook         = manageSpawn <+> myManageHook <+> manageHook desktopConfig <+> namedScratchpadManageHook scratchpads
@@ -269,4 +270,7 @@ main = do
       , normalBorderColor  = normBord
       , keys               = myKeys
       , mouseBindings      = myMouseBindings
-} 
+} where
+    myWorkspaces' = w0 ++ w1 
+    w0          = concatMap (\ x -> ["l" ++ x]) myWorkspaces
+    w1          = concatMap (\ x -> ["r" ++ x]) myWorkspaces

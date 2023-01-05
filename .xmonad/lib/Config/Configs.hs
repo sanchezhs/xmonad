@@ -41,15 +41,9 @@ layouts = zip
 
 
 scratchpads = [
--- run htop in xterm, find it by title, use default floating window placement
-    NS "htop" "alacritty -e htop" (title =? "htop") defaultFloating ,
-
--- run stardict, find it by class name, place it in the floating window
--- 1/6 of screen width from the left, 1/6 of screen height
--- from the top, 2/3 of screen width by 2/3 of screen height
-    NS "thunar" "thunar" (className =? "Thunar")
+    NS "alacritty" "alacritty" (className =? "Alacritty")
         (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) ,
 
--- run gvim, find by role, don't float
-    NS "notes" "gvim --role notes ~/notes.txt" (role =? "notes") nonFloating
-  ] where role = stringProperty "WM_WINDOW_ROLE"
+    NS "thunar" "thunar" (className =? "Thunar")
+        (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) 
+  ] 
