@@ -182,6 +182,7 @@ myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList
 
 
 -- keys config
+
 myKeys :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   ----------------------------------------------------------------------
@@ -196,7 +197,6 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((mod1Mask, xK_t), namedScratchpadAction scratchpads "thunar")
 
   -- SUPER + SHIFT KEYS
-  --, ((modMask .|. shiftMask , xK_d ), spawn "dmenu_run -i -nb '#191919' -nf '#fea63c' -sb '#fea63c' -sf '#191919' -fn 'NotoMonoRegular:bold:pixelsize=14'")
   , ((modMask .|. shiftMask, xK_z), spawn "rofi -show drun -show-icons -display-drun $")
   , ((modMask .|. shiftMask , xK_r ), spawn "xmonad --recompile && xmonad --restart")
   , ((modMask .|. shiftMask , xK_q ), kill)
@@ -280,30 +280,30 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
 
   -- Decrement the number of windows in the master area.
   , ((controlMask .|. modMask, xK_Right), sendMessage (IncMasterN (-1)))
-
   ]
    ++
     [((m .|. modMask, k), windows $ onCurrentScreen f i)
         | (i, k) <- zip (workspaces' conf) [xK_1 .. xK_9]
-        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
+        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]        
+    
+ 
 
 ------------------------------------------------------------------------------------
 
 main :: IO ()
 main = do
-  xmonad . ewmh $ desktopConfig {
-
-        startupHook = myStartupHook
-      , layoutHook = gaps [(U,35), (D,5), (R,5), (L,5)] $ myLayout ||| layoutHook desktopConfig
-      , manageHook = manageSpawn <+> myManageHook <+> manageHook desktopConfig <+> namedScratchpadManageHook scratchpads
-      , modMask = myModMask
-      , borderWidth = myBorderWidth
-      , terminal = myTerminal
+  xmonad . ewmh $  desktopConfig {
+        startupHook        = myStartupHook
+      , layoutHook         = gaps [(U,35), (D,5), (R,5), (L,5)] $ myLayout ||| layoutHook desktopConfig
+      , manageHook         = manageSpawn <+> myManageHook <+> manageHook desktopConfig <+> namedScratchpadManageHook scratchpads
+      , modMask            = myModMask
+      , borderWidth        = myBorderWidth
+      , terminal           = myTerminal
       , handleEventHook    = handleEventHook desktopConfig
-      , focusFollowsMouse = myFocusFollowsMouse
-      , workspaces = withScreens 2 myWorkspaces
+      , focusFollowsMouse  = myFocusFollowsMouse
+      , workspaces         = withScreens 2 myWorkspaces
       , focusedBorderColor = focdBord
-      , normalBorderColor = normBord
-      , keys = myKeys
-      , mouseBindings = myMouseBindings
-}
+      , normalBorderColor  = normBord
+      , keys               = myKeys
+      , mouseBindings      = myMouseBindings
+} 
