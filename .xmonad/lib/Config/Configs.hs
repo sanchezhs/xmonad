@@ -34,7 +34,7 @@ myWorkspaces = map show [1 .. 9 :: Int]
 
 ------------------------------------------------------------------------------------
 
-layouts :: [(String, Int)]
+layouts :: [(String, Integer)]
 layouts = zip 
   ["Spacing Tall", "Spacing Mirror Tall", "Spacing Spiral",  "Spacing ThreeCol", "Spacing Full", "Tall", "Mirror Tall", "Full"]
   [0 ..]

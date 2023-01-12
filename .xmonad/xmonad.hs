@@ -35,9 +35,8 @@ import XMonad.Layout.IndependentScreens
 -- 
 import Graphics.X11.ExtraTypes.XF86
 import qualified Data.Map as M
-import Data.Maybe(fromMaybe)
 import Data.Maybe (fromJust, isJust, fromMaybe, isNothing)
-
+import Control.Monad(when)
 
 
 -- Extras
@@ -65,9 +64,14 @@ currentScreen = gets (W.screen . W.current . windowset)
 getCurrentScreen :: ScreenId -> Int 
 getCurrentScreen (S i) = i
 
-getHook :: String -> [(String, Int)] -> String
-getHook _ [] = "9"
-getHook x ((a,b):xs) = if x == a then show b else getHook x xs
+-- simplificar con filter:
+--  filter (\ (a,b) -> a == "Spacing Tall") l
+--getHook :: String -> [(String, Int)] -> String
+--getHook _ [] = "9"
+--getHook x ((a,b):xs) = if x == a then show b else getHook x xs
+
+getHook :: String -> [(String, Integer)] -> String
+getHook l xs = (\ [(a,b)] -> show b) $ filter (\ (a,b) -> a == l) xs
 
 
 nextLayout ::  X ()
@@ -75,9 +79,17 @@ nextLayout  = do
   sendMessage NextLayout
   layout <- gets $ description . W.layout . W.workspace . W.current . windowset
   cs     <- currentScreen
-  if cs == 0 then spawn $ "polybar-msg action layout2 hook "  ++ getHook layout layouts
-  else spawn $ "polybar-msg action layout1 hook "  ++ getHook layout layouts  
+  let l = getHook layout layouts
+  if cs == 0 
+    then spawn $ "polybar-msg action layout2 hook "  ++ l
+    else spawn $ "polybar-msg action layout1 hook "  ++ l
 
+
+sendToScreen :: X ()
+sendToScreen = do 
+  cs <- currentScreen
+  when (cs == 0) (windows $ withWspOnScreen 1 W.shift)
+  windows $ withWspOnScreen 0 W.shift
 
 toggleFloat :: Window -> X ()
 toggleFloat w =
@@ -117,8 +129,8 @@ myManageHook = composeAll . concat $
 
 ------------------------------------------------------------------------------------
 
-
-myLayout = spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidStruts $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) $ tiled ||| Mirror tiled ||| spiral (6/7)  ||| ThreeColMid 1 (3/100) (1/2) ||| Full
+-- spiral (6/7)  
+myLayout = spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidStruts $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) $ tiled ||| Mirror tiled ||| ThreeColMid 1 (3/100) (1/2) ||| Full
     where
         tiled = Tall nmaster delta tiled_ratio
         nmaster = 1
@@ -127,6 +139,7 @@ myLayout = spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidSt
 
 ------------------------------------------------------------------------------------
 
+-- Mouse config
 myMouseBindings :: XConfig l -> M.Map (KeyMask, Button) (Window -> X ())
 myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList
 
@@ -185,7 +198,8 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
 
   --------------------------------------------------------------------
   --  XMONAD LAYOUT KEY
-  , ((modMask .|. shiftMask, xK_d), windows $ W.shift =<< W.tag . W.workspace . head . W.visible)
+  --, ((modMask .|. shiftMask, xK_d), windows $ W.shift =<< W.tag . W.workspace . head . W.visible)
+  , ((modMask .|. shiftMask, xK_d), sendToScreen)
 
   -- Toggle floating.
   , ((modMask .|. shiftMask , xK_f), withFocused toggleFloat)
@@ -251,14 +265,13 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]        
     
  
--- Por hacer: Mejores nombres a escritorios de los monitores
 ------------------------------------------------------------------------------------
 
 main :: IO ()
 main = do
   xmonad . ewmh $ desktopConfig {
         startupHook        = myStartupHook
-      , layoutHook         = gaps [(U,35), (D,5), (R,5), (L,5)] $ myLayout ||| layoutHook desktopConfig
+      , layoutHook         = gaps [(U,35), (D,5), (R,5), (L,5)] myLayout -- ||| layoutHook desktopConfig
       , manageHook         = manageSpawn <+> myManageHook <+> manageHook desktopConfig <+> namedScratchpadManageHook scratchpads
       , modMask            = myModMask
       , borderWidth        = myBorderWidth
@@ -270,7 +283,4 @@ main = do
       , normalBorderColor  = normBord
       , keys               = myKeys
       , mouseBindings      = myMouseBindings
-} where
-    myWorkspaces' = w0 ++ w1 
-    w0          = concatMap (\ x -> ["l" ++ x]) myWorkspaces
-    w1          = concatMap (\ x -> ["r" ++ x]) myWorkspaces
+} 
