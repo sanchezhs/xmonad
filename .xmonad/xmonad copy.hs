@@ -42,11 +42,6 @@ import Control.Monad(when, unless)
 import Color.Nord
 import Config.Configs
 
-import XMonad.Util.Loggers
-import XMonad.Hooks.StatusBar
-import XMonad.Hooks.StatusBar.PP
-import XMonad.Hooks.DynamicLog (PP(ppWsSep))
-
 
 ------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
@@ -103,24 +98,13 @@ toggleFloat w =
           then W.sink w s
           else W.float w (W.RationalRect (1 / 3) (1 / 4) (1 / 2) (1 / 2)) s )
 
-myWorkspaces' = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-myWorkspaceIndices = M.fromList $ zip myWorkspaces' [1..] -- (,) == \x y -> (x,y)
-
-clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
-    where i = fromJust $ M.lookup ws myWorkspaceIndices
-
-
-windowCount :: X (Maybe String)
-windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
-
-
 ------------------------------------------------------------------------------------
 
 -- Actions to perform on startup
 myStartupHook :: X ()
 myStartupHook = do
     spawn "$HOME/.xmonad/scripts/autostart.sh"
-   -- spawn ("sleep 2 && trayer --edge top --align right --widthtype request --padding 6 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --iconspacing 5 --transparent true  " ++ colorTrayer ++ " --height 22")
+    spawn "sleep 2 && polybar-msg action layout1 hook 0 && polybar-msg action layout2 hook 0"
     setWMName "LG3D"
 
 
@@ -275,7 +259,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- Decrement the number of windows in the master area.
   , ((controlMask .|. modMask, xK_Right), sendMessage (IncMasterN (-1)))
   ]
-  ++
+   ++
     [((m .|. modMask, k), windows $ onCurrentScreen f i)
         | (i, k) <- zip (workspaces' conf) [xK_1 .. xK_9]
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
@@ -283,40 +267,9 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
 
 ------------------------------------------------------------------------------------
 
-
-myStatusBarSpawner :: Applicative f => ScreenId -> f StatusBarConfig
-myStatusBarSpawner (S s) = do
-                    pure $ statusBarPropTo ("_XMONAD_LOG_" ++ show s)
-                          ("xmobar -x " ++ show s ++ " ~/.xmonad/xmobarrc" ++ show s ++ ".hs")
-                          (pure $ myPP (S s))
-
-
--- xmobarPP
-myPP s  =  filterOutWsPP [scratchpadWorkspaceTag] . marshallPP s $ def {
-         -- ppOutput = \x -> hPutStrLn one x >> hPutStrLn two x
-          ppCurrent = xmobarColor "#11CAED" "" . wrap "[" "]"  -- ("<box type=Bottom width=2 mb=2 color=" ++ color06 ++ ">") "</box>"
-        , ppVisible = xmobarColor color06 "" . wrap "[" "]"   -- . clickable
-        , ppHidden = wrap " *" " "   -- . clickable --  xmobarColor color16 "" . wrap ("<box type=Top width=2 mt=2 color=" ++ color05 ++ ">") "</box>" . clickable
-        , ppHiddenNoWindows = xmobarColor color05 "" . wrap " " " "  -- . clickable
-        , ppTitle = xmobarColor color16 "" . shorten 30
-        , ppWsSep = " "
-        , ppSep =  "<fc=" ++ color09 ++ "> <fn=1>|</fn> </fc>"
-        , ppUrgent = xmobarColor color02 "" . wrap "!" "!"
-        , ppExtras  = [windowCount]
-        , ppOrder  = \(ws:l:_:ex) -> [ws,l]++ex
-        }
-
---mySBL = statusBarProp "xmobar -x 1 $HOME/.xmonad/xmobarrc1.hs" $ pure (marshallPP (S 0) myPP)
---mySBR = statusBarProp "xmobar -x 0 $HOME/.xmonad/xmobarrc0.hs" $ pure (marshallPP (S 1) myPP)
-
 main :: IO ()
 main = do
-
-  -- xmproc0 <- spawnPipe "xmobar -x 1 $HOME/.xmonad/xmobarrc1.hs"
-  -- xmproc1 <- spawnPipe "xmobar -x 0 $HOME/.xmonad/xmobarrc0.hs"
-
--- . withSB (mySBL xmproc0 xmproc1 <> mySBR xmproc0 xmproc1)
-  xmonad . ewmh . dynamicSBs myStatusBarSpawner $ desktopConfig  {
+  xmonad . ewmh $ desktopConfig {
         startupHook        = myStartupHook
       , layoutHook         = gaps [(U,35), (D,5), (R,5), (L,5)] myLayout -- ||| layoutHook desktopConfig
       , manageHook         = manageSpawn <+> myManageHook <+> manageHook desktopConfig <+> namedScratchpadManageHook scratchpads
@@ -325,12 +278,9 @@ main = do
       , terminal           = myTerminal
       , handleEventHook    = handleEventHook desktopConfig
       , focusFollowsMouse  = myFocusFollowsMouse
-      , workspaces         = withScreens 2 myWorkspaces'
+      , workspaces         = withScreens 2 myWorkspaces
       , focusedBorderColor = focdBord
       , normalBorderColor  = normBord
       , keys               = myKeys
       , mouseBindings      = myMouseBindings
-      --, logHook            = dynamicLogWithPP $  filterOutWsPP [scratchpadWorkspaceTag] $ myPP xmproc0 xmproc1
-         
-      
 }

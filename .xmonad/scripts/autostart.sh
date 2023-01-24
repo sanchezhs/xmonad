@@ -41,11 +41,11 @@ run pamac-tray &
 run volumeicon &
 numlockx on &
 blueberry-tray &
-/home/samuel/.config/polybar/launch.sh
+#/home/samuel/.config/polybar/launch.sh
 picom --config $HOME/.xmonad/scripts/picom.conf &
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 /usr/lib/xfce4/notifyd/xfce4-notifyd &
-
+# g413-led -fx breathing all ffffff 1fg413-led -fx breathing all ffffff 1f
 #starting user applications at boot time
 #nitrogen --restore &
 #run caffeine &
