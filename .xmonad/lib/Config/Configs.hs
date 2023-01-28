@@ -40,9 +40,10 @@ layouts = zip
   [0 ..]
 
 
+scratchpads :: [NamedScratchpad]
 scratchpads = [
---    NS "alacritty" "alacritty" (className =? "Alacritty")
---        (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) ,
+    NS "urxvt" "urxvt" (className =? "URxvt") defaultFloating ,
+        -- (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) ,
 
     NS "thunar" "thunar" (className =? "Thunar")
         (customFloating $ W.RationalRect (1/6) (1/6) (2/3) (2/3)) 

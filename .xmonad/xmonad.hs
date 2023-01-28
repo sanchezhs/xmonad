@@ -29,6 +29,7 @@ import XMonad.Layout.Spiral(spiral)
 import XMonad.Layout.ThreeColumns
 import XMonad.Layout.MultiToggle
 import XMonad.Layout.MultiToggle.Instances
+import XMonad.Layout.Tabbed
 import XMonad.Layout.IndependentScreens
 
 -- 
@@ -41,12 +42,11 @@ import Control.Monad(when, unless)
 -- Extras
 import Color.Nord
 import Config.Configs
-
-import XMonad.Util.Loggers
 import XMonad.Hooks.StatusBar
 import XMonad.Hooks.StatusBar.PP
 import XMonad.Hooks.DynamicLog (PP(ppWsSep))
-
+import XMonad.Util.Loggers
+import XMonad.Layout.Tabbed (simpleTabbed)
 
 ------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
@@ -109,9 +109,23 @@ myWorkspaceIndices = M.fromList $ zip myWorkspaces' [1..] -- (,) == \x y -> (x,y
 clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
     where i = fromJust $ M.lookup ws myWorkspaceIndices
 
+clickable' :: [Char] -> [Char]
+clickable' ws = "<action=xdotool key super+"++show i++">"++ws'++"</action>"
+    where
+        (_,ws') = unmarshall ws
+        i       = fromJust $ M.lookup (snd $ unmarshall ws) myWorkspaceIndices
+
 
 windowCount :: X (Maybe String)
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
+
+
+countWindows' :: ScreenId -> X (Maybe String)
+countWindows' (S s) = do
+    ws <- gets $ W.screens . windowset
+    case filter (\x -> W.screen x == S s) ws of
+        (w:_) -> return $ Just $ show $ length $ W.integrate' $ W.stack $ W.workspace w
+        []    -> return Nothing
 
 
 ------------------------------------------------------------------------------------
@@ -145,8 +159,12 @@ myManageHook = composeAll . concat $
 
 ------------------------------------------------------------------------------------
 
--- spiral (6/7)  
-myLayout = spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidStruts $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) $ tiled ||| Mirror tiled ||| ThreeColMid 1 (3/100) (1/2) ||| Full
+myTabConfig = def { inactiveBorderColor = "#2E3440"
+                  , activeTextColor = "#ffffff"
+                  , activeColor = "#123456"}
+
+
+myLayout = spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidStruts $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) $ tiled ||| Mirror tiled ||| simpleTabbed  ||| Full
     where
         tiled = Tall nmaster delta tiled_ratio
         nmaster = 1
@@ -184,7 +202,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((modMask, xK_b), spawn "firefox" )
 
   , ((mod1Mask, xK_t), namedScratchpadAction scratchpads "thunar")
-
+  , ((modMask .|. shiftMask, xK_Return), namedScratchpadAction scratchpads "urxvt")
   -- SUPER + SHIFT KEYS
   , ((modMask, xK_w), spawn "rofi -show drun -show-icons -display-drun $")
   , ((modMask .|. shiftMask , xK_r ), spawn "xmonad --recompile && xmonad --restart")
@@ -291,31 +309,23 @@ myStatusBarSpawner (S s) = do
                           (pure $ myPP (S s))
 
 
--- xmobarPP
+myPP :: ScreenId -> PP
 myPP s  =  filterOutWsPP [scratchpadWorkspaceTag] . marshallPP s $ def {
-         -- ppOutput = \x -> hPutStrLn one x >> hPutStrLn two x
           ppCurrent = xmobarColor "#11CAED" "" . wrap "[" "]"  -- ("<box type=Bottom width=2 mb=2 color=" ++ color06 ++ ">") "</box>"
-        , ppVisible = xmobarColor color06 "" . wrap "[" "]"   -- . clickable
-        , ppHidden = wrap " *" " "   -- . clickable --  xmobarColor color16 "" . wrap ("<box type=Top width=2 mt=2 color=" ++ color05 ++ ">") "</box>" . clickable
-        , ppHiddenNoWindows = xmobarColor color05 "" . wrap " " " "  -- . clickable
+        , ppVisible = xmobarColor color06 "" . wrap "[" "]" -- . clickable'
+        , ppHidden = wrap " *" " "   -- . clickable' --  xmobarColor color16 "" . wrap ("<box type=Top width=2 mt=2 color=" ++ color05 ++ ">") "</box>" . clickable
+        , ppHiddenNoWindows = xmobarColor color05 "" . wrap " " " " --  . clickable'
         , ppTitle = xmobarColor color16 "" . shorten 30
         , ppWsSep = " "
         , ppSep =  "<fc=" ++ color09 ++ "> <fn=1>|</fn> </fc>"
         , ppUrgent = xmobarColor color02 "" . wrap "!" "!"
-        , ppExtras  = [windowCount]
-        , ppOrder  = \(ws:l:_:ex) -> [ws,l]++ex
+        , ppExtras  = [logLayoutOnScreen s, countWindows' s]
+        , ppOrder  = \(ws:_:_:ex) -> ws : ex
         }
 
---mySBL = statusBarProp "xmobar -x 1 $HOME/.xmonad/xmobarrc1.hs" $ pure (marshallPP (S 0) myPP)
---mySBR = statusBarProp "xmobar -x 0 $HOME/.xmonad/xmobarrc0.hs" $ pure (marshallPP (S 1) myPP)
 
 main :: IO ()
 main = do
-
-  -- xmproc0 <- spawnPipe "xmobar -x 1 $HOME/.xmonad/xmobarrc1.hs"
-  -- xmproc1 <- spawnPipe "xmobar -x 0 $HOME/.xmonad/xmobarrc0.hs"
-
--- . withSB (mySBL xmproc0 xmproc1 <> mySBR xmproc0 xmproc1)
   xmonad . ewmh . dynamicSBs myStatusBarSpawner $ desktopConfig  {
         startupHook        = myStartupHook
       , layoutHook         = gaps [(U,35), (D,5), (R,5), (L,5)] myLayout -- ||| layoutHook desktopConfig
@@ -330,7 +340,4 @@ main = do
       , normalBorderColor  = normBord
       , keys               = myKeys
       , mouseBindings      = myMouseBindings
-      --, logHook            = dynamicLogWithPP $  filterOutWsPP [scratchpadWorkspaceTag] $ myPP xmproc0 xmproc1
-         
-      
 }
