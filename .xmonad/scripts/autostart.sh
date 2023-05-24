@@ -30,7 +30,7 @@ run dex $HOME/.config/autostart/arcolinux-welcome-app.desktop
 #Some ways to set your wallpaper besides variety or nitrogen
 #feh --bg-fill /usr/share/backgrounds/archlinux/arch-wallpaper.jpg &
 #feh --bg-fill /usr/share/backgrounds/arcolinux/arco-wallpaper.jpg &
-nitrogen --restore /usr/share/backgrounds/arcolinux/green-meadows-3360x1050.jpg &
+nitrogen --restore /usr/share/backgrounds/3840x1080-Wallpaper-059.jpg &
 
 #start the conky to learn the shortcuts
 # (conky -c $HOME/.xmonad/scripts/system-overview) &

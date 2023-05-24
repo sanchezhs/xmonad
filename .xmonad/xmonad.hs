@@ -126,8 +126,7 @@ countWindows' (S s) = do
     case filter (\x -> W.screen x == S s) ws of
         (w:_) -> return $ Just $ show $ length $ W.integrate' $ W.stack $ W.workspace w
         []    -> return Nothing
-
-
+  
 ------------------------------------------------------------------------------------
 
 -- Actions to perform on startup
@@ -200,6 +199,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((modMask, xK_Return), spawn "alacritty" )
   , ((modMask, xK_z), spawn "thunar" )
   , ((modMask, xK_b), spawn "firefox" )
+  , ((modMask, xK_c), spawn "code" )
 
   , ((mod1Mask, xK_t), namedScratchpadAction scratchpads "thunar")
   , ((modMask .|. shiftMask, xK_Return), namedScratchpadAction scratchpads "urxvt")
@@ -297,7 +297,10 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
     [((m .|. modMask, k), windows $ onCurrentScreen f i)
         | (i, k) <- zip (workspaces' conf) [xK_1 .. xK_9]
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
-
+  ++
+      [((m .|. modMask, key), screenWorkspace sc >>= flip whenJust (windows . f))
+        | (key, sc) <- zip [xK_Right, xK_Left] [0..]
+        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
 
 ------------------------------------------------------------------------------------
 
